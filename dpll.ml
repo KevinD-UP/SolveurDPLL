@@ -92,39 +92,19 @@ let rec unitaire clauses =
     | _ -> 0
   in
   match clauses with
-  | [] -> raise (Not_found)
+  | [] -> raise (Not_found) (*On atteint la fin de la liste sans trouver de clause unitaire*)
   | h::t -> if unitaire_aux h = 0 then unitaire t else unitaire_aux h
 ;;
-  
-(* insert : int -> int list -> int list 
-   insère la valeur x au bon endroit dans une liste l*)
-let insert x l =
-  let rec insert_aux l1 acc = 
-    match l1 with
-    | [] -> x::acc |> List.rev
-    | h::t as l' -> 
-        if x < h then List.rev_append acc (x::l') 
-        else insert_aux t (h::acc) 
-  in insert_aux l [];;
-
-(* sort : int list -> int list 
-   tri par insertion sur la liste l*)
-let sort l =
-  let rec sort_aux l1 acc =
-    match l1 with
-    | [] -> acc 
-    | h::t -> sort_aux t (insert h acc) 
-  in sort_aux l [];;
 
 (* pur : int list list -> int
     - si `clauses' contient au moins un littéral pur, retourne
       ce littéral ;
     - sinon, lève une exception `Failure "pas de littéral pur"' *)
 let pur clauses =
-  let l = sort(List.flatten(clauses)) in
+  let l = List.sort compare (clauses |> List.flatten) in
   let rec pur_aux = function
-    | [] -> failwith "pas de littéral pur"
-    | h::t -> if (est_dedans (h*(-1)) l) = true then pur_aux t else h
+    | [] -> failwith "pas de littéral pur" (*On atteint la fin de la liste sans trouver de littéral pur*)
+    | h::t -> if (est_dedans (h*(-1)) l) then pur_aux t else h
   in
   pur_aux l
 ;;
@@ -133,13 +113,13 @@ let pur clauses =
   applique la suppression de clause*)
 let rec supp_clause =
   let rec supp_clause_aux = function
-    | [] -> []
+    | [] -> [] (*Fin d'une clause*)
     | h::t -> 
     if (h > 0 && est_dedans (-h) t)||(h < 0 && est_dedans (h*(-1)) t) then []
     else h::supp_clause_aux t
   in
   function
-  | [] -> []
+  | [] -> [] (*Fin de la liste des clauses*)
   | h'::t' -> if supp_clause_aux h' = [] then (supp_clause t') else supp_clause_aux (h')::(supp_clause t')
 ;;
 
@@ -157,7 +137,7 @@ let rec solveur_dpll_rec clauses interpretation =
   | _ -> let u = try unitaire cl with
     | Not_found -> try pur cl with
       | Failure _ -> 0 in
-    if (u = 0) then solveur_dpll_rec_aux (sort(List.flatten(cl))) else
+    if (u = 0) then solveur_dpll_rec_aux (List.sort compare (cl |> List.flatten)) else
       solveur_dpll_rec (simplifie u cl) (u::interpretation)
 
 ;;
